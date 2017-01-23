@@ -7,9 +7,25 @@
 </ion-header>
 
 <ion-content padding>
+  <button ion-button primary (click)="download_pdf()">
+    Download PDF
+  </button>
+
+  <p> Sitewearts Document Viewer </p>
+
+  <button ion-button primary (click)="check_pdf()">
+    Check PDF
+  </button>
+
   <button ion-button primary (click)="open_pdf()">
     Open PDF
   </button>
 
-  
+  <p> Themeable Browser </p>
+
+  <button ion-button primary (click)="open_themeable_pdf()">
+    Open PDF
+  </button>
+
+
 </ion-content>

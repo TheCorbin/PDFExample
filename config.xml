@@ -40,4 +40,13 @@
   <allow-navigation href="http://10.80.56.174:8100"/>
   <allow-navigation href="http://10.80.56.205:8100"/>
   <allow-navigation href="http://10.80.56.89:8100"/>
+  <allow-navigation href="http://10.80.56.97:8100"/>
+  <allow-navigation href="http://10.80.56.118:8101"/>
+  <allow-navigation href="http://10.80.56.138:8100"/>
+  <allow-navigation href="http://10.80.56.229:8100"/>
+  <allow-navigation href="http://10.80.56.235:8100"/>
+  <allow-navigation href="http://10.80.56.55:8100"/>
+  <allow-navigation href="http://10.80.56.162:8100"/>
+  <allow-navigation href="http://10.80.56.192:8100"/>
+  <allow-navigation href="http://10.80.56.204:8100"/>
 </widget>

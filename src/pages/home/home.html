@@ -1,31 +1,41 @@
 <ion-header>
   <ion-navbar>
     <ion-title>
-      Ionic Blank
+      PDF Options
     </ion-title>
   </ion-navbar>
 </ion-header>
 
 <ion-content padding>
-  <button ion-button primary (click)="download_pdf()">
-    Download PDF
-  </button>
 
-  <p> Sitewearts Document Viewer </p>
+  <div class="toggle">
+    <div class="toggle-element"> Offline </div>
+    <div class="toggle-element">
+      <ion-toggle toggle-text="Offline;Online" [(ngModel)]='OnlineToggle' color='navy'>
+      </ion-toggle>
+    </div >
+    <div class="toggle-element"> Online </div>
+  </div>
 
-  <button ion-button primary (click)="check_pdf()">
-    Check PDF
-  </button>
+  <div class="buttons">
+    <ion-label> Ionic Native InAppBrowser</ion-label>
+    <button ion-button primary (click)="open_inAppBrowser()">
+      Open PDF
+    </button>
 
-  <button ion-button primary (click)="open_pdf()">
-    Open PDF
-  </button>
+    <ion-label> Themeable Browser </ion-label>
+    <button ion-button primary (click)="open_themeable_pdf()">
+      Open PDF
+    </button>
 
-  <p> Themeable Browser </p>
+    <ion-label> Sitewearts Document Viewer </ion-label>
+    <button ion-button primary (click)="open_siteweartspdf()">
+      Open PDF
+    </button>
 
-  <button ion-button primary (click)="open_themeable_pdf()">
-    Open PDF
-  </button>
-
-
+    <ion-label> Android PDF Opener </ion-label>
+    <button ion-button primary (click)="openAndroidPDF()">
+      Open PDF
+    </button>
+  </div>
 </ion-content>

@@ -1,9 +1,12 @@
 import { Component } from '@angular/core';
 import { InAppBrowser, File, Transfer } from 'ionic-native';
-import { Platform, NavController, AlertController } from 'ionic-angular';
+import { Platform, NavController, NavParams, AlertController } from 'ionic-angular';
 import { ThemeableBrowser } from 'ionic-native';
 import { PDFModel } from '../../models/pdf-model';
+import { PdfDisplayPage } from '../pdf-display/pdf-display';
+// import  AndroidNativePdfViewer  from 'AndroidNativePdfViewer';
 declare var cordova: any;
+declare var AndroidNativePdfViewer: any;
 
 
 @Component({
@@ -11,8 +14,11 @@ declare var cordova: any;
   templateUrl: 'home.html',
 })
 export class HomePage {
+  static readonly googleUrlPrefix = 'https://docs.google.com/gview?embedded=true&url=';
   storageDirectory: string = '';
   pdf: PDFModel;
+  OnlineToggle: boolean;
+  onlineLocation ='http://www.axmag.com/download/pdfurl-guide.pdf';
 
   constructor(public navCtrl: NavController, public platform:Platform, public alertCtrl: AlertController) {
 
@@ -30,13 +36,40 @@ export class HomePage {
       else {
         return false;
       }
-    })
 
+      this.platform.ready().then(() => {
+
+        const fileTransfer = new Transfer();
+        console.log(this.storageDirectory);
+        fileTransfer.download(this.onlineLocation, this.storageDirectory + "pdf.pdf").then((entry) => {
+          this.OnlineToggle = false;
+
+          // const alertSuccess = this.alertCtrl.create({
+          //   title: 'Download Succeeded!',
+          //   subTitle: 'pdf.pdf was successfully download to:' + entry.toURL(),
+          //   buttons: ['OK']
+          // });
+          // alertSuccess.present();
+
+          let temp = new PDFModel( "Document", entry.toURL() );
+          console.log(temp.location + " location!");
+          console.log(temp.title + " title!")
+          this.pdf = temp;
+
+        }, (error) => {
+          const alertFailure = this.alertCtrl.create({
+            title: 'Download failed!',
+            subTitle: '${image} was not successfully downloaded. Error code: ${error.code}',
+            buttons: ['Ok']
+          });
+          alertFailure.present();
+        });
+      });
+    })
   }
 
-  open_pdf( ){
-    // let browser = new InAppBrowser('../assets/pdfs/pdf1.pdf', '_blank', 'location=yes, enableViewportScale=yes');
-    // browser.show();
+  open_siteweartspdf( ){
+    //
 
     var options = {
       "title": "pdf",
@@ -66,17 +99,32 @@ export class HomePage {
       }
     }
 
+    let tempLocation = this.OnlineToggle ? this.onlineLocation : this.pdf.location;
 
-    cordova.plugins.SitewaertsDocumentViewer.viewDocument( this.pdf.location, 'application/pdf', options, this.onShow, this.onClose, this.onMissingApp, this.onError);
+    if(this.platform.is('ios')) {
+
+      if (this.OnlineToggle) {
+        const alertFailure = this.alertCtrl.create({
+          title: 'Not Supported',
+          subTitle: 'Sitewaerts Document Viewer Does not support online viewing' ,buttons: ['Ok']
+        });
+        alertFailure.present();
+      } else {
+        cordova.plugins.SitewaertsDocumentViewer.viewDocument(tempLocation, 'application/pdf', options, this.onShow(tempLocation), this.onClose, this.onMissingApp, this.onError);
+      }
+    } else if(this.platform.is('android')) {
+
+      const alertFailure = this.alertCtrl.create({
+        title: 'Problem!',
+        subTitle: 'The Document Viewer on Android throws to another app because of copyright issues.' ,buttons: ['Ok']
+      });
+      alertFailure.present();
+    }
+
   }
 
-  check_pdf(){
-    var options;
-    cordova.plugins.SitewaertsDocumentViewer.canViewDocument( this.pdf.location, 'application/pdf', options, this.onPossible, this.onMissingApp, this.onImpossible, this.onError);
-  }
-
-  onShow(){
-    console.log('document shown');
+  onShow(location){
+    console.log('Showing file at:' + location);
   }
 
   onClose(){
@@ -102,110 +150,130 @@ export class HomePage {
     console.log("ERROR: CANNOT SHOW DOCUMENT");
   }
 
-  download_pdf(){
-    this.platform.ready().then(() => {
+  open_inAppBrowser(){
+    let tempLocation = this.OnlineToggle ? this.onlineLocation : this.pdf.location;
 
-      const fileTransfer = new Transfer();
-      const imageLocation ='http://www.axmag.com/download/pdfurl-guide.pdf';
+    if(this.platform.is('ios')) {
+      let browser = new InAppBrowser(tempLocation, '_blank', 'location=yes, enableViewportScale=yes');
+      browser.show();
 
-      fileTransfer.download(imageLocation, this.storageDirectory + "pdf.pdf").then((entry) => {
+    } else if(this.platform.is('android')) {
 
-        console.log(entry);
+      if(this.OnlineToggle){
+        tempLocation = HomePage.googleUrlPrefix + encodeURIComponent(tempLocation);
 
-        const alertSuccess = this.alertCtrl.create({
-          title: 'Download Succeeded!',
-          subTitle: 'pdf.pdf was successfully download to:' + entry.toURL(),
-          buttons: ['OK']
-        });
-        alertSuccess.present();
+        let browser = new InAppBrowser(tempLocation, '_blank', 'location=yes, enableViewportScale=yes');
+        browser.show();
 
-        let temp = new PDFModel( "Hamburger", entry.toURL() );
-        console.log(temp.location + " location!");
-        console.log(temp.title + " title!")
-        this.pdf = temp;
-
-      }, (error) => {
-
+      } else {
         const alertFailure = this.alertCtrl.create({
-          title: 'Download failed!',
-          subTitle: '${image} was not successfully downloaded. Error code: ${error.code}',
-          buttons: ['Ok']
+          title: 'Problem!',
+          subTitle: 'InAppBrowser can\'t open offline PDF\'s on an Android device' ,buttons: ['Ok']
         });
-
         alertFailure.present();
-      });
+      }
+    }
+  }
+
+  open_themeable_pdf(){
+    let tempLocation = this.OnlineToggle ? this.onlineLocation : this.pdf.location;
+
+    if(this.platform.is('ios')) {
+
+      this.themeableBrowser(tempLocation);
+
+    } else if(this.platform.is('android')) {
+
+      if(this.OnlineToggle){
+
+        this.themeableBrowser(HomePage.googleUrlPrefix + encodeURIComponent(tempLocation));
+
+      } else {
+        const alertFailure = this.alertCtrl.create({
+          title: 'Problem!',
+          subTitle: 'ThemeableBrowser can\'t open offline PDF\'s on an Android device' ,buttons: ['Ok']
+        });
+        alertFailure.present();
+      }
+    }
+  }
+
+  themeableBrowser(location){
+    const baseConfig = {
+      toolbar: {
+        height: 44,
+        color: '#004a8b'
+      },
+      closeButton: {
+        wwwImage: 'assets/icon/back_small.png',
+        wwwImageDensity: 2,
+        align: 'left',
+        event: 'closePressed'
+      },
+      menu: {
+        wwwImage: 'assets/icon/more_small.png',
+        wwwImageDensity: 2,
+        align: 'right',
+        cancel: 'Cancel',
+        items: [
+          {
+            event: 'helloPressed',
+            label: 'Hello World!'
+          },
+          {
+            event: 'locationPressed',
+            label: 'Location of PDF'
+          },
+        ]
+
+      },
+      backButtonCanClose: false
+    }
+
+    let browser = cordova.ThemeableBrowser.open(location, '_blank', baseConfig);
+
+    browser.addEventListener('backPressed', function(e) {
+      alert('back pressed');
+    });
+
+    browser.addEventListener('helloPressed', function(e) {
+      alert('hello pressed');
+    });
+
+    browser.addEventListener('locationPressed', function(e) {
+      alert(location);
+    });
+
+    browser.addEventListener(cordova.ThemeableBrowser.EVT_ERR, function(e) {
+      console.error(e.message);
+    });
+
+    browser.addEventListener(cordova.ThemeableBrowser.EVT_WRN, function(e) {
+      console.log(e.message);
     });
   }
 
-  // open_themeable_pdf(){
-  //     cordova.ThemeableBrowser.open(this.pdf.location, '_blank', {
-  //     statusbar: {
-  //         color: '#ffffffff'
-  //     },
-  //     toolbar: {
-  //         height: 44,
-  //         color: '#f0f0f0ff'
-  //     },
-  //     title: {
-  //         color: '#003264ff',
-  //         showPageTitle: false
-  //     },
-  //     backButton: {
-  //         wwwimage: 'images/bookmark.png',
-  //         wwwimagePressed: 'images/bookmark.png',
-  //         align: 'left',
-  //         event: 'backPressed'
-  //     },
-  //     forwardButton: {
-  //         wwwimage: 'assets/images/disembodied_princess.png',
-  //         wwwimagePressed: 'assets/images/disembodied_princess.png',
-  //         align: 'left',
-  //         event: 'forwardPressed'
-  //     },
-  //     closeButton: {
-  //         image: 'close',
-  //         imagePressed: 'close_pressed',
-  //         align: 'left',
-  //         event: 'closePressed'
-  //     },
-  //     customButtons: [
-  //         {
-  //             image: 'share',
-  //             imagePressed: 'share_pressed',
-  //             align: 'right',
-  //             event: 'sharePressed'
-  //         }
-  //     ],
-  //     menu: {
-  //         image: 'menu',
-  //         imagePressed: 'menu_pressed',
-  //         title: 'Test',
-  //         cancel: 'Cancel',
-  //         align: 'right',
-  //         items: [
-  //             {
-  //                 event: 'helloPressed',
-  //                 label: 'Hello World!'
-  //             },
-  //             {
-  //                 event: 'testPressed',
-  //                 label: 'Test!'
-  //             }
-  //         ]
-  //     },
-  //     backButtonCanClose: true
-  //   }).addEventListener('backPressed', function(e) {
-  //                              //alert('back pressed');
-  //   }).addEventListener('openWith',function(e){
-  //     $cordovaFileOpener2.open(
-  //                                  vm.pdfURI,
-  //                                  'application/pdf'
-  //                              ).then(function() {
-  //                                    // Success!
-  //                              }, function(error) {
-  //                                  $cordovaDialogs.alert('Ha ocurrido un error al abrir el documento : '+error, 'Error', 'Aceptar')
-  //                                    // An error occurred. Show a message to the user
-  //                              });
-  //                          })
-  // }
+  openAndroidPDF(){
+    let tempLocation = this.OnlineToggle ? this.onlineLocation : this.pdf.location;
+
+    var options = {
+      headerColor:"#000000",
+      showScroll:true
+    }
+
+    if(this.platform.is('ios')) {
+      const alertFailure = this.alertCtrl.create({
+        title: 'Problem!',
+        subTitle: 'The Android Document Viewer doesn\'t work on iOS.  Shocking.' ,buttons: ['Ok']
+      });
+      alertFailure.present();
+    } else if(this.platform.is('android')) {
+      AndroidNativePdfViewer.openPdfUrl(tempLocation, this.pdf.title, options,
+        function(success){
+          console.log(tempLocation)
+        }, function(error){
+          console.log("It didn't work!")
+        });
+    }
+  }
 }

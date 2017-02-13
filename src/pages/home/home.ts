@@ -14,6 +14,7 @@ declare var AndroidNativePdfViewer: any;
   templateUrl: 'home.html',
 })
 export class HomePage {
+
   static readonly googleUrlPrefix = 'https://docs.google.com/gview?embedded=true&url=';
   storageDirectory: string = '';
   pdf: PDFModel;
@@ -27,23 +28,26 @@ export class HomePage {
         return false;
       }
 
+
+      //Platform check to determine storage directory prefix
       if (this.platform.is('ios')) {
         this.storageDirectory = cordova.file.documentsDirectory;
-      }
-      else if(this.platform.is('android')) {
+      } else if(this.platform.is('android')) {
         this.storageDirectory = cordova.file.dataDirectory;
-      }
-      else {
+      } else {
         return false;
       }
 
       this.platform.ready().then(() => {
+        // File Transfer Code - Getting the file from it's online location and
+        // creating a local copy for offline functionality
 
         const fileTransfer = new Transfer();
         console.log(this.storageDirectory);
         fileTransfer.download(this.onlineLocation, this.storageDirectory + "pdf.pdf").then((entry) => {
           this.OnlineToggle = false;
 
+          // A Little Alert for when the PDF has been downloaded.  Useful for troubleshooting.
           // const alertSuccess = this.alertCtrl.create({
           //   title: 'Download Succeeded!',
           //   subTitle: 'pdf.pdf was successfully download to:' + entry.toURL(),
@@ -69,7 +73,9 @@ export class HomePage {
   }
 
   open_siteweartspdf( ){
-    //
+    // The Sitewearts Document viewer starts with a JSON encoded string.  This has
+    // options for features such as print and bookmark.  Not all are ready for all
+    // platforms.
 
     var options = {
       "title": "pdf",
@@ -102,6 +108,7 @@ export class HomePage {
     let tempLocation = this.OnlineToggle ? this.onlineLocation : this.pdf.location;
 
     if(this.platform.is('ios')) {
+      //Works great when the document is local on ios
 
       if (this.OnlineToggle) {
         const alertFailure = this.alertCtrl.create({
@@ -110,10 +117,11 @@ export class HomePage {
         });
         alertFailure.present();
       } else {
+        //Notice all the extra functions that it requires
         cordova.plugins.SitewaertsDocumentViewer.viewDocument(tempLocation, 'application/pdf', options, this.onShow(tempLocation), this.onClose, this.onMissingApp, this.onError);
       }
     } else if(this.platform.is('android')) {
-
+      //On Android the app will throw to another app to view the PDF
       const alertFailure = this.alertCtrl.create({
         title: 'Problem!',
         subTitle: 'The Document Viewer on Android throws to another app because of copyright issues.' ,buttons: ['Ok']
@@ -151,13 +159,21 @@ export class HomePage {
   }
 
   open_inAppBrowser(){
+    // The standard option of ionic
+
     let tempLocation = this.OnlineToggle ? this.onlineLocation : this.pdf.location;
+
+    // The Option enableViewportScale=yes is the one that enables native gestures
 
     if(this.platform.is('ios')) {
       let browser = new InAppBrowser(tempLocation, '_blank', 'location=yes, enableViewportScale=yes');
       browser.show();
 
     } else if(this.platform.is('android')) {
+
+      // With the InAppBrowser on Android it is possible to view online documents by
+      // prefixing the location with the google prefix and encoding the location
+      // with encodeURIComponent()
 
       if(this.OnlineToggle){
         tempLocation = HomePage.googleUrlPrefix + encodeURIComponent(tempLocation);
@@ -166,6 +182,7 @@ export class HomePage {
         browser.show();
 
       } else {
+        //inAppBrowser does not support the viewing of offline documents with inAppBrowser
         const alertFailure = this.alertCtrl.create({
           title: 'Problem!',
           subTitle: 'InAppBrowser can\'t open offline PDF\'s on an Android device' ,buttons: ['Ok']
@@ -176,6 +193,10 @@ export class HomePage {
   }
 
   open_themeable_pdf(){
+    // Basically the same logic as the inAppBrowser.  The browser works great
+    // on ios, but on Android it can only open an online document with the
+    // google prefix and can't open Android offline documents.
+
     let tempLocation = this.OnlineToggle ? this.onlineLocation : this.pdf.location;
 
     if(this.platform.is('ios')) {
@@ -199,6 +220,9 @@ export class HomePage {
   }
 
   themeableBrowser(location){
+    // The setup for themeableBrowser.  To implement custom buttons add a button
+    // to the customButtons array.  Then add a listener as shown below.
+
     const baseConfig = {
       toolbar: {
         height: 44,
@@ -210,6 +234,14 @@ export class HomePage {
         align: 'left',
         event: 'closePressed'
       },
+      // customButtons: [
+      //   {
+      //        image: 'share',
+      //        imagePressed: 'share_pressed',
+      //        align: 'right',
+      //        event: 'sharePressed'
+      //    }
+      // ],
       menu: {
         wwwImage: 'assets/icon/more_small.png',
         wwwImageDensity: 2,
@@ -230,6 +262,8 @@ export class HomePage {
       backButtonCanClose: false
     }
 
+    // Although it seems counter-intutitve, open the browser first, then create
+    // listeners.
     let browser = cordova.ThemeableBrowser.open(location, '_blank', baseConfig);
 
     browser.addEventListener('backPressed', function(e) {
